@@ -1,0 +1,86 @@
+# Level-Up Gamer - Backend con microservicios
+#   docker compose up -d --build     -> construye y levanta todo
+#   docker compose ps                -> estado de los contenedores
+#   docker compose logs -f ms-usuarios
+#   docker compose down              -> detiene todo (los datos de MySQL se conservan en el volumen)
+#
+# Variables configurables (puedes ponerlas en un archivo .env junto a este archivo, ver .env.example):
+#   MYSQL_ROOT_PASSWORD, JWT_SECRET, CORS_ORIGINS
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      TZ: America/Santiago
+    # Ajustes para gastar menos memoria en instancias pequeñas
+    command: --performance-schema=OFF --innodb-buffer-pool-size=64M --max-connections=60
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      # Se usa 127.0.0.1 (TCP) para que no dé "listo" mientras MySQL todavía corre el script inicial
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+
+  ms-productos:
+    build: ./ms-productos
+    container_name: ms-productos
+    ports:
+      - "8081:8081"
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/levelup_productos?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Santiago
+      DB_USER: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      JWT_SECRET: ${JWT_SECRET:-levelup-gamer-clave-secreta-desarrollo-cambiar-en-produccion-2026}
+      CORS_ORIGINS: ${CORS_ORIGINS:-*}
+      JAVA_OPTS: -Xms64m -Xmx256m
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+
+  ms-usuarios:
+    build: ./ms-usuarios
+    container_name: ms-usuarios
+    ports:
+      - "8082:8082"
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/levelup_usuarios?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Santiago
+      DB_USER: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      JWT_SECRET: ${JWT_SECRET:-levelup-gamer-clave-secreta-desarrollo-cambiar-en-produccion-2026}
+      CORS_ORIGINS: ${CORS_ORIGINS:-*}
+      JAVA_OPTS: -Xms64m -Xmx256m
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+
+  ms-gestion-usuarios:
+    build: ./ms-gestion-usuarios
+    container_name: ms-gestion-usuarios
+    ports:
+      - "8083:8083"
+    environment:
+      # Usa la MISMA base que ms-usuarios: gestiona los usuarios que se registraron
+      DB_URL: jdbc:mysql://mysql:3306/levelup_usuarios?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Santiago
+      DB_USER: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      JWT_SECRET: ${JWT_SECRET:-levelup-gamer-clave-secreta-desarrollo-cambiar-en-produccion-2026}
+      CORS_ORIGINS: ${CORS_ORIGINS:-*}
+      JAVA_OPTS: -Xms64m -Xmx256m
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  mysql_data:

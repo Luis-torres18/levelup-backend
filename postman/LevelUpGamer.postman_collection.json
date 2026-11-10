@@ -1,0 +1,847 @@
+{
+  "info": {
+    "_postman_id": "3c08b6ed-404e-4bbb-a248-f8fee69b27b5",
+    "name": "Level-Up Gamer - Microservicios",
+    "description": "Pruebas de los 3 microservicios. Ejecuta primero 'Login ADMIN' (guarda el token automáticamente).\nCambia las variables url_* por http://<ELASTIC_IP>:808X para probar en la EC2.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "url_productos",
+      "value": "http://localhost:8081"
+    },
+    {
+      "key": "url_usuarios",
+      "value": "http://localhost:8082"
+    },
+    {
+      "key": "url_gestion",
+      "value": "http://localhost:8083"
+    },
+    {
+      "key": "token_admin",
+      "value": ""
+    },
+    {
+      "key": "token_cliente",
+      "value": ""
+    },
+    {
+      "key": "id_producto",
+      "value": "1"
+    },
+    {
+      "key": "id_usuario",
+      "value": "1"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. ms-usuarios (registro y login) :8082",
+      "item": [
+        {
+          "name": "Registro de cliente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Queda con rol CLIENTE\", () => pm.expect(pm.response.json().rol).to.eql(\"CLIENTE\"));",
+                  "pm.test(\"No expone la contraseña\", () => pm.expect(pm.response.json()).to.not.have.property(\"contrasena\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{url_usuarios}}/api/auth/registro",
+              "host": [
+                "{{url_usuarios}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "registro"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cliente Postman\",\n  \"correo\": \"cliente.postman@gmail.com\",\n  \"contrasena\": \"Cliente123!\",\n  \"telefono\": \"+56 9 1234 5678\",\n  \"region\": \"Metropolitana de Santiago\",\n  \"comuna\": \"Santiago\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Si el correo ya existe responde 409. Ejecuta 'Login CLIENTE' después."
+          }
+        },
+        {
+          "name": "Login ADMIN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "const datos = pm.response.json();",
+                  "pm.collectionVariables.set(\"token_admin\", datos.token);",
+                  "pm.test(\"Rol ADMIN\", () => pm.expect(datos.usuario.rol).to.eql(\"ADMIN\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{url_usuarios}}/api/auth/login",
+              "host": [
+                "{{url_usuarios}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"admin@duocuc.cl\",\n  \"contrasena\": \"Admin123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Login CLIENTE",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set(\"token_cliente\", pm.response.json().token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{url_usuarios}}/api/auth/login",
+              "host": [
+                "{{url_usuarios}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"cliente.postman@gmail.com\",\n  \"contrasena\": \"Cliente123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Login con contraseña incorrecta (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{url_usuarios}}/api/auth/login",
+              "host": [
+                "{{url_usuarios}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"admin@duocuc.cl\",\n  \"contrasena\": \"Incorrecta1!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Perfil del usuario logueado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{url_usuarios}}/api/auth/perfil",
+              "host": [
+                "{{url_usuarios}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "perfil"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. ms-productos (CRUD) :8081",
+      "item": [
+        {
+          "name": "Listar productos (público)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Devuelve una lista\", () => pm.expect(pm.response.json()).to.be.an(\"array\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url_productos}}/api/productos",
+              "host": [
+                "{{url_productos}}"
+              ],
+              "path": [
+                "api",
+                "productos"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear producto (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"id_producto\", pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{url_productos}}/api/productos",
+              "host": [
+                "{{url_productos}}"
+              ],
+              "path": [
+                "api",
+                "productos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoria\": \"Teclados\",\n  \"nombre\": \"Teclado mecánico RGB\",\n  \"descripcion\": \"Switches rojos, retroiluminación RGB y reposamuñecas.\",\n  \"imagen\": \"https://ejemplo.com/teclado.jpg\",\n  \"precio\": 49990\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Obtener producto por id (público)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url_productos}}/api/productos/{{id_producto}}",
+              "host": [
+                "{{url_productos}}"
+              ],
+              "path": [
+                "api",
+                "productos",
+                "{{id_producto}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Actualizar producto (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Precio actualizado\", () => pm.expect(pm.response.json().precio).to.eql(59990));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{url_productos}}/api/productos/{{id_producto}}",
+              "host": [
+                "{{url_productos}}"
+              ],
+              "path": [
+                "api",
+                "productos",
+                "{{id_producto}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoria\": \"Teclados\",\n  \"nombre\": \"Teclado mecánico RGB Pro\",\n  \"descripcion\": \"Switches rojos, retroiluminación RGB y reposamuñecas.\",\n  \"imagen\": \"https://ejemplo.com/teclado.jpg\",\n  \"precio\": 59990\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Eliminar producto (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{url_productos}}/api/productos/{{id_producto}}",
+              "host": [
+                "{{url_productos}}"
+              ],
+              "path": [
+                "api",
+                "productos",
+                "{{id_producto}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear producto sin token (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{url_productos}}/api/productos",
+              "host": [
+                "{{url_productos}}"
+              ],
+              "path": [
+                "api",
+                "productos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoria\": \"Teclados\",\n  \"nombre\": \"Teclado mecánico RGB\",\n  \"descripcion\": \"Switches rojos, retroiluminación RGB y reposamuñecas.\",\n  \"imagen\": \"https://ejemplo.com/teclado.jpg\",\n  \"precio\": 49990\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Crear producto como CLIENTE (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_cliente}}"
+              }
+            ],
+            "url": {
+              "raw": "{{url_productos}}/api/productos",
+              "host": [
+                "{{url_productos}}"
+              ],
+              "path": [
+                "api",
+                "productos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoria\": \"Teclados\",\n  \"nombre\": \"Teclado mecánico RGB\",\n  \"descripcion\": \"Switches rojos, retroiluminación RGB y reposamuñecas.\",\n  \"imagen\": \"https://ejemplo.com/teclado.jpg\",\n  \"precio\": 49990\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Crear producto con precio inválido (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{url_productos}}/api/productos",
+              "host": [
+                "{{url_productos}}"
+              ],
+              "path": [
+                "api",
+                "productos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoria\": \"Teclados\",\n  \"nombre\": \"Teclado mecánico RGB\",\n  \"descripcion\": \"Switches rojos, retroiluminación RGB y reposamuñecas.\",\n  \"imagen\": \"https://ejemplo.com/teclado.jpg\",\n  \"precio\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. ms-gestion-usuarios (solo ADMIN) :8083",
+      "item": [
+        {
+          "name": "Listar usuarios",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{url_gestion}}/api/usuarios",
+              "host": [
+                "{{url_gestion}}"
+              ],
+              "path": [
+                "api",
+                "usuarios"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear usuario (ADMIN elige el rol)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"id_usuario\", pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{url_gestion}}/api/usuarios",
+              "host": [
+                "{{url_gestion}}"
+              ],
+              "path": [
+                "api",
+                "usuarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Usuario Gestion\",\n  \"correo\": \"gestion.postman@gmail.com\",\n  \"contrasena\": \"Gestion123!\",\n  \"telefono\": \"\",\n  \"region\": \"Valparaíso\",\n  \"comuna\": \"Viña del Mar\",\n  \"rol\": \"CLIENTE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Obtener usuario por id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{url_gestion}}/api/usuarios/{{id_usuario}}",
+              "host": [
+                "{{url_gestion}}"
+              ],
+              "path": [
+                "api",
+                "usuarios",
+                "{{id_usuario}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Editar usuario y cambiar rol a ADMIN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Rol cambiado\", () => pm.expect(pm.response.json().rol).to.eql(\"ADMIN\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{url_gestion}}/api/usuarios/{{id_usuario}}",
+              "host": [
+                "{{url_gestion}}"
+              ],
+              "path": [
+                "api",
+                "usuarios",
+                "{{id_usuario}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Usuario Gestion Editado\",\n  \"correo\": \"gestion.postman@gmail.com\",\n  \"contrasena\": \"\",\n  \"telefono\": \"912345678\",\n  \"region\": \"Valparaíso\",\n  \"comuna\": \"Valparaíso\",\n  \"rol\": \"ADMIN\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Si 'contrasena' va vacía, se mantiene la actual."
+          }
+        },
+        {
+          "name": "Eliminar usuario",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{url_gestion}}/api/usuarios/{{id_usuario}}",
+              "host": [
+                "{{url_gestion}}"
+              ],
+              "path": [
+                "api",
+                "usuarios",
+                "{{id_usuario}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar usuarios como CLIENTE (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_cliente}}"
+              }
+            ],
+            "url": {
+              "raw": "{{url_gestion}}/api/usuarios",
+              "host": [
+                "{{url_gestion}}"
+              ],
+              "path": [
+                "api",
+                "usuarios"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar usuarios sin token (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url_gestion}}/api/usuarios",
+              "host": [
+                "{{url_gestion}}"
+              ],
+              "path": [
+                "api",
+                "usuarios"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
